@@ -1,5 +1,6 @@
 2vcf
 *.vcf
+*.vcf.gz
 *.sw?
 *.out
 *.grind

@@ -1,23 +1,25 @@
 package main
 
 import (
-	"bufio"
-	"compress/gzip"
-	"fmt"
-	"github.com/brentp/vcfgo"
-	"gopkg.in/alecthomas/kingpin.v2"
+  "io"
 	"os"
-	"path/filepath"
-  "runtime/pprof"
-  "archive/zip"
+	"fmt"
+  "log"
+	"bufio"
 	"strconv"
 	"strings"
-  "log"
+  "archive/zip"
+	"compress/gzip"
+	"path/filepath"
+  "runtime/pprof"
+	"github.com/brentp/vcfgo"
+  "gopkg.in/h2non/filetype.v1"
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 var (
 	ancestry   = kingpin.Flag("ancestry", "input-data is from ancestry.com").Bool()
-	inputFile  = kingpin.Flag("input-data", "relative path to input data, unzipped").Required().Short('i').String()
+	inputFile  = kingpin.Flag("input-data", "relative path to input data, zip or ascii").Required().Short('i').String()
 	outputFile = kingpin.Flag("output-data", "relative path to output data, gzipped").Required().Short('o').String()
 	vcfRef     = kingpin.Flag("vcf-ref", "relative path to vcf reference data, gzipped").Default("reference.vcf.gz").Short('v').String()
   profiling = false
@@ -75,10 +77,10 @@ func convertCalls(inputFile string, referenceFile string, outputFile string) {
   vcfGzOut := gzip.NewWriter(vcfOut)
   defer vcfGzOut.Flush()
 
-	vcfOutBuff := bufio.NewWriter(vcfGzOut)
-  defer vcfOutBuff.Flush()
+	// vcfOutBuff := bufio.NewWriter(vcfGzOut)
+  // defer vcfOutBuff.Flush()
 
-	vcfWriter, err := vcfgo.NewWriter(vcfOutBuff, hdr)
+	vcfWriter, err := vcfgo.NewWriter(vcfGzOut, hdr)
 	errHndlr("error opening vfgo.Writer: ", err)
 
 	for {
@@ -95,21 +97,29 @@ func convertCalls(inputFile string, referenceFile string, outputFile string) {
 	}
 }
 
-// TODO make this use magic number to figure
-// out whether zip or not
 func getLoci(inputFile string) map[Rsid]Locus {
-  zipIn, err := zip.OpenReader(inputFile)
-  defer zipIn.Close()
+  var (
+    input io.Reader
+    err error
+  )
+
+  if isZip(inputFile) {
+    //log.Println("processing compressed input")
+    zipIn, err := zip.OpenReader(inputFile)
+    defer zipIn.Close()
+
+    zipFile := zipIn.File[0]
+    input, err = zipFile.Open()
+    errHndlr("failed to read zipped input: ", err)
+  } else {
+    //log.Println("processing uncompressed input")
+    input, err = os.Open(inputFile)
+    errHndlr("failed to uncompressed input", err)
+  }
+
+  var inputScanner = bufio.NewScanner(input)
 
 	loci := make(map[Rsid]Locus)
-
-  zipFile := zipIn.File[0]
-  file, err := zipFile.Open()
-  errHndlr("failed to read zipped input: ", err)
-
-  var inputScanner = bufio.NewScanner(file)
-  defer file.Close()
-
 	for inputScanner.Scan() {
 		line := inputScanner.Text()
 		if line[0] == '#' || line[0:4] == "rsid" {
@@ -119,6 +129,16 @@ func getLoci(inputFile string) map[Rsid]Locus {
 		loci[locus.rsid] = locus
 	}
 	return loci
+}
+
+func isZip(inputFile string)bool {
+  input, err := os.Open(inputFile)
+  errHndlr("error checking input file for type", err)
+  defer input.Close()
+  bb := make([]byte, 100)
+  input.Read(bb)
+  kind, err :=filetype.Match(bb)
+  return kind.Extension == "zip"
 }
 
 func parse(line string) Locus {

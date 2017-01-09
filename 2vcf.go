@@ -13,6 +13,7 @@ import (
 	"path/filepath"
   "runtime/pprof"
 	"github.com/brentp/vcfgo"
+  "github.com/biogo/hts/bgzf"
   "gopkg.in/h2non/filetype.v1"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
@@ -74,13 +75,10 @@ func convertCalls(inputFile string, referenceFile string, outputFile string) {
 	errHndlr("error opening file for vcf output: ", err)
 	defer vcfOut.Close()
 
-  vcfGzOut := gzip.NewWriter(vcfOut)
-  defer vcfGzOut.Flush()
+  bgzfOut := bgzf.NewWriter(vcfOut, gzip.BestCompression)
+  defer bgzfOut.Flush()
 
-	// vcfOutBuff := bufio.NewWriter(vcfGzOut)
-  // defer vcfOutBuff.Flush()
-
-	vcfWriter, err := vcfgo.NewWriter(vcfGzOut, hdr)
+	vcfWriter, err := vcfgo.NewWriter(bgzfOut, hdr)
 	errHndlr("error opening vfgo.Writer: ", err)
 
 	for {

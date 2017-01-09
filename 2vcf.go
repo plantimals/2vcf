@@ -72,7 +72,10 @@ func convertCalls(inputFile string, referenceFile string, outputFile string) {
 	errHndlr("error opening file for vcf output: ", err)
 	defer vcfOut.Close()
 
-	vcfOutBuff := bufio.NewWriter(vcfOut)
+  vcfGzOut := gzip.NewWriter(vcfOut)
+  defer vcfGzOut.Flush()
+
+	vcfOutBuff := bufio.NewWriter(vcfGzOut)
   defer vcfOutBuff.Flush()
 
 	vcfWriter, err := vcfgo.NewWriter(vcfOutBuff, hdr)
@@ -92,20 +95,20 @@ func convertCalls(inputFile string, referenceFile string, outputFile string) {
 	}
 }
 
+// TODO make this use magic number to figure
+// out whether zip or not
 func getLoci(inputFile string) map[Rsid]Locus {
-	// inFile, err := os.Open(inputFile)
-	// errHndlr("error opening input file: ", err)
-	// defer inFile.Close()
   zipIn, err := zip.OpenReader(inputFile)
-	//var inputScanner = bufio.NewScanner(zipIn)
+  defer zipIn.Close()
 
-	//inputScanner.Split(bufio.ScanLines)
 	loci := make(map[Rsid]Locus)
 
-  zipFile := zipIn.File
-  var inputScanner = bufio.NewScanner(zipFile.Open())
-  defer zipFile.Close()
+  zipFile := zipIn.File[0]
+  file, err := zipFile.Open()
+  errHndlr("failed to read zipped input: ", err)
 
+  var inputScanner = bufio.NewScanner(file)
+  defer file.Close()
 
 	for inputScanner.Scan() {
 		line := inputScanner.Text()

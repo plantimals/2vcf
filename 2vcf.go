@@ -1,21 +1,21 @@
 package main
 
 import (
-  "io"
-	"os"
-	"fmt"
-  "log"
+	"archive/zip"
 	"bufio"
+	"compress/gzip"
+	"fmt"
+	"github.com/biogo/hts/bgzf"
+	"github.com/brentp/vcfgo"
+	"gopkg.in/alecthomas/kingpin.v2"
+	"gopkg.in/h2non/filetype.v1"
+	"io"
+	"log"
+	"os"
+	"path/filepath"
+	"runtime/pprof"
 	"strconv"
 	"strings"
-  "archive/zip"
-	"compress/gzip"
-	"path/filepath"
-  "runtime/pprof"
-	"github.com/brentp/vcfgo"
-  "github.com/biogo/hts/bgzf"
-  "gopkg.in/h2non/filetype.v1"
-	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 var (
@@ -23,7 +23,7 @@ var (
 	inputFile  = kingpin.Flag("input-data", "relative path to input data, zip or ascii").Required().Short('i').String()
 	outputFile = kingpin.Flag("output-data", "relative path to output data, gzipped").Required().Short('o').String()
 	vcfRef     = kingpin.Flag("vcf-ref", "relative path to vcf reference data, gzipped").Default("reference.vcf.gz").Short('v').String()
-  profiling = false
+	profiling  = false
 )
 
 type Rsid string
@@ -47,14 +47,14 @@ func errHndlr(msg string, err error) {
 }
 
 func main() {
-  if profiling {
-    f, err := os.Create("profile.out")
-    if err != nil {
-      log.Fatal(err)
-    }
-    pprof.StartCPUProfile(f)
-    defer pprof.StopCPUProfile()
-  }
+	if profiling {
+		f, err := os.Create("profile.out")
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
 
 	kingpin.CommandLine.HelpFlag.Short('h')
 	kingpin.Version("1.0.0")
@@ -75,8 +75,8 @@ func convertCalls(inputFile string, referenceFile string, outputFile string) {
 	errHndlr("error opening file for vcf output: ", err)
 	defer vcfOut.Close()
 
-  bgzfOut := bgzf.NewWriter(vcfOut, gzip.BestCompression)
-  defer bgzfOut.Flush()
+	bgzfOut := bgzf.NewWriter(vcfOut, gzip.BestCompression)
+	defer bgzfOut.Flush()
 
 	vcfWriter, err := vcfgo.NewWriter(bgzfOut, hdr)
 	errHndlr("error opening vfgo.Writer: ", err)
@@ -96,26 +96,26 @@ func convertCalls(inputFile string, referenceFile string, outputFile string) {
 }
 
 func getLoci(inputFile string) map[Rsid]Locus {
-  var (
-    input io.Reader
-    err error
-  )
+	var (
+		input io.Reader
+		err   error
+	)
 
-  if isZip(inputFile) {
-    //log.Println("processing compressed input")
-    zipIn, err := zip.OpenReader(inputFile)
-    defer zipIn.Close()
+	if isZip(inputFile) {
+		//log.Println("processing compressed input")
+		zipIn, err := zip.OpenReader(inputFile)
+		defer zipIn.Close()
 
-    zipFile := zipIn.File[0]
-    input, err = zipFile.Open()
-    errHndlr("failed to read zipped input: ", err)
-  } else {
-    //log.Println("processing uncompressed input")
-    input, err = os.Open(inputFile)
-    errHndlr("failed to uncompressed input", err)
-  }
+		zipFile := zipIn.File[0]
+		input, err = zipFile.Open()
+		errHndlr("failed to read zipped input: ", err)
+	} else {
+		//log.Println("processing uncompressed input")
+		input, err = os.Open(inputFile)
+		errHndlr("failed to uncompressed input", err)
+	}
 
-  var inputScanner = bufio.NewScanner(input)
+	var inputScanner = bufio.NewScanner(input)
 
 	loci := make(map[Rsid]Locus)
 	for inputScanner.Scan() {
@@ -129,14 +129,14 @@ func getLoci(inputFile string) map[Rsid]Locus {
 	return loci
 }
 
-func isZip(inputFile string)bool {
-  input, err := os.Open(inputFile)
-  errHndlr("error checking input file for type", err)
-  defer input.Close()
-  bb := make([]byte, 100)
-  input.Read(bb)
-  kind, err :=filetype.Match(bb)
-  return kind.Extension == "zip"
+func isZip(inputFile string) bool {
+	input, err := os.Open(inputFile)
+	errHndlr("error checking input file for type", err)
+	defer input.Close()
+	bb := make([]byte, 100)
+	input.Read(bb)
+	kind, err := filetype.Match(bb)
+	return kind.Extension == "zip"
 }
 
 func parse(line string) Locus {

@@ -5,10 +5,6 @@ import (
 	"bufio"
 	"compress/gzip"
 	"fmt"
-	"github.com/biogo/hts/bgzf"
-	"github.com/brentp/vcfgo"
-	"gopkg.in/alecthomas/kingpin.v2"
-	"gopkg.in/h2non/filetype.v1"
 	"io"
 	"log"
 	"os"
@@ -16,6 +12,11 @@ import (
 	"runtime/pprof"
 	"strconv"
 	"strings"
+
+	"github.com/biogo/hts/bgzf"
+	"github.com/brentp/vcfgo"
+	"gopkg.in/alecthomas/kingpin.v2"
+	"gopkg.in/h2non/filetype.v1"
 )
 
 var (

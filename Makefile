@@ -1,7 +1,14 @@
-BINARY=2vcf
+BINARY_PATH=bin
+2VCF_BINARY=2vcf
+2VCF_PATH=./cmd/2vcf/
 
-build:
-	go build -o ${BINARY}
+build: $(2VCF_BINARY)
+
+$(2VCF_BINARY):
+	go build -o ${BINARY_PATH}/${2VCF_BINARY} ${2VCF_PATH}
+
+build2:
+	go build -o ${BINARY} cli/2vcf.go
 
 clean:
 	go clean

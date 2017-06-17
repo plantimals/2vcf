@@ -1,4 +1,4 @@
-package main
+package convert
 
 import (
 	"archive/zip"
@@ -6,37 +6,51 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
-	"runtime/pprof"
 	"strconv"
 	"strings"
 
 	"github.com/biogo/hts/bgzf"
 	"github.com/brentp/vcfgo"
-	"gopkg.in/alecthomas/kingpin.v2"
 	"gopkg.in/h2non/filetype.v1"
 )
 
+type Client struct {
+	inputFile  string
+	outputFile string
+	vcfRef     string
+	ancestry   bool
+}
+
 var (
-	ancestry   = kingpin.Flag("ancestry", "input-data is from ancestry.com").Bool()
-	inputFile  = kingpin.Flag("input-data", "relative path to input data, zip or ascii").Required().Short('i').String()
-	outputFile = kingpin.Flag("output-data", "relative path to output data, gzipped").Required().Short('o').String()
-	vcfRef     = kingpin.Flag("vcf-ref", "relative path to vcf reference data, gzipped").Default("reference.vcf.gz").Short('v').String()
-	profiling  = false
+	defaultVCFRef = "reference/reference.vcf.gz"
 )
 
-type Rsid string
-type Chrom string
-type Locus struct {
-	chrom Chrom  "chromosome name"
-	rsid  Rsid   "rsid of the marker"
+//Newclient returns a basic Client, with default reference path
+func Newclient(inputFile string, outputFile string) *Client {
+	return NewclientWithRef(inputFile, outputFile, "reference/reference.vcf.go")
+}
+
+//NewclientWithRef returns a new Client, containing the specified ref
+func NewclientWithRef(inputFile string, outputFile string, vcfRef string) *Client {
+	return &Client{
+		inputFile:  inputFile,
+		outputFile: outputFile,
+		vcfRef:     vcfRef,
+	}
+}
+
+type rsid string
+type chrom string
+type locus struct {
+	chrom chrom  "chromosome name"
+	rsid  rsid   "rsid of the marker"
 	pos   int    "one based physical coordinate"
 	gt    string "genotype call"
 }
 
-func (l Locus) String() string {
+func (l locus) String() string {
 	return fmt.Sprintf("%s\t%v\t%s", l.chrom, l.pos, l.rsid)
 }
 
@@ -47,32 +61,24 @@ func errHndlr(msg string, err error) {
 	}
 }
 
-func main() {
-	if profiling {
-		f, err := os.Create("profile.out")
-		if err != nil {
-			log.Fatal(err)
-		}
-		pprof.StartCPUProfile(f)
-		defer pprof.StopCPUProfile()
-	}
-
-	kingpin.CommandLine.HelpFlag.Short('h')
-	kingpin.Version("1.0.0")
-	kingpin.Parse()
-
-	convertCalls(*inputFile, *vcfRef, *outputFile)
+func (c *Client) Convert23AndMe() {
+	c.ancestry = false
+	c.convertCalls()
 }
 
-func convertCalls(inputFile string, referenceFile string, outputFile string) {
-	loci := getLoci(inputFile)
+func (c *Client) ConvertAncestry() {
 
-	refRdr, ref := getRefReader(referenceFile)
+}
+
+func (c *Client) convertCalls() {
+	loci := c.getLoci(c.inputFile)
+
+	refRdr, ref := getRefReader(c.vcfRef)
 	defer ref.Close()
 
-	hdr := getHeader(refRdr)
+	hdr := c.getHeader(refRdr)
 
-	vcfOut, err := os.Create(outputFile)
+	vcfOut, err := os.Create(c.outputFile)
 	errHndlr("error opening file for vcf output: ", err)
 	defer vcfOut.Close()
 
@@ -87,7 +93,7 @@ func convertCalls(inputFile string, referenceFile string, outputFile string) {
 		if variant == nil {
 			break
 		}
-		locus, ok := loci[Rsid(variant.Id_)]
+		locus, ok := loci[rsid(variant.Id_)]
 		if !ok {
 			continue
 		}
@@ -96,7 +102,7 @@ func convertCalls(inputFile string, referenceFile string, outputFile string) {
 	}
 }
 
-func getLoci(inputFile string) map[Rsid]Locus {
+func (c *Client) getLoci(inputFile string) map[rsid]locus {
 	var (
 		input io.Reader
 		err   error
@@ -118,13 +124,13 @@ func getLoci(inputFile string) map[Rsid]Locus {
 
 	var inputScanner = bufio.NewScanner(input)
 
-	loci := make(map[Rsid]Locus)
+	loci := make(map[rsid]locus)
 	for inputScanner.Scan() {
 		line := inputScanner.Text()
 		if line[0] == '#' || line[0:4] == "rsid" {
 			continue
 		}
-		locus := parse(line)
+		locus := c.parse(line)
 		loci[locus.rsid] = locus
 	}
 	return loci
@@ -140,7 +146,7 @@ func isZip(inputFile string) bool {
 	return kind.Extension == "zip"
 }
 
-func parse(line string) Locus {
+func (c *Client) parse(line string) locus {
 	s := strings.Split(line, "\t")
 	pos, err := strconv.ParseInt(s[2], 10, 32)
 	errHndlr("error parsing pos: "+s[2], err)
@@ -149,11 +155,11 @@ func parse(line string) Locus {
 	// columns 3 and 4, rather than 23andme's joined alleles
 	// in column 3
 	alleles := s[3]
-	if *ancestry {
+	if c.ancestry {
 		alleles = s[3] + s[4]
 	}
 
-	return Locus{Chrom(s[1]), Rsid(s[0]), int(pos), alleles}
+	return locus{chrom(s[1]), rsid(s[0]), int(pos), alleles}
 }
 
 func getRefReader(referenceFile string) (*vcfgo.Reader, *os.File) {
@@ -169,9 +175,9 @@ func getRefReader(referenceFile string) (*vcfgo.Reader, *os.File) {
 	return refRdr, ref
 }
 
-func getHeader(rdr *vcfgo.Reader) *vcfgo.Header {
+func (c *Client) getHeader(rdr *vcfgo.Reader) *vcfgo.Header {
 	hdr := rdr.Header
-	hdr.SampleNames = []string{inputFileName()}
+	hdr.SampleNames = []string{c.inputFileName()}
 	hdr.SampleFormats["GT"] = getSampleFormatGT()
 	return hdr
 }
@@ -185,16 +191,16 @@ func getSampleFormatGT() *vcfgo.SampleFormat {
 	return &answer
 }
 
-func addGenotypeSample(locus Locus, variant *vcfgo.Variant) []*vcfgo.SampleGenotype {
+func addGenotypeSample(loc locus, variant *vcfgo.Variant) []*vcfgo.SampleGenotype {
 	variant.Format = []string{"GT"}
 	gt := vcfgo.NewSampleGenotype()
 	gt.Phased = false
-	gt.GT = locus.getGenotypeInts(variant)
+	gt.GT = loc.getGenotypeInts(variant)
 	gt.Fields["GT"] = getGenotypeString(gt.GT)
 	return []*vcfgo.SampleGenotype{gt}
 }
 
-func (l *Locus) getGenotypeInts(v *vcfgo.Variant) []int {
+func (l *locus) getGenotypeInts(v *vcfgo.Variant) []int {
 	gts := append([]string{v.Reference}, v.Alternate...)
 	answer := make([]int, len(l.gt))
 	for lidx := 0; lidx < len(l.gt); lidx++ {
@@ -215,7 +221,7 @@ func getGenotypeString(gts []int) string {
 	return strings.Join(alleles, "/")
 }
 
-func inputFileName() string {
-	parts := strings.Split(filepath.Base(*inputFile), ".")
+func (c *Client) inputFileName() string {
+	parts := strings.Split(filepath.Base(c.inputFile), ".")
 	return strings.Join(parts[0:len(parts)-1], ".")
 }

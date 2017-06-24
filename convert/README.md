@@ -7,6 +7,15 @@
 * [Index](#pkg-index)
 
 ## <a name="pkg-overview">Overview</a>
+Package convert handles the merging of microarray
+genotype calls with the more detailed information
+required for a VCF.
+
+Included is a VCF with the union of the loci included
+in 23andme and ancestry.com microarray chips. The
+convert package intersects this VCF with the sites in
+the raw data by marker name, the `rsid`.
+
 
 
 
@@ -19,7 +28,7 @@
 
 
 #### <a name="pkg-files">Package files</a>
-[convert.go](/src/github.com/plantimals/2vcf/convert/convert.go) 
+[convert.go](/src/github.com/plantimals/2vcf/convert/convert.go) [doc.go](/src/github.com/plantimals/2vcf/convert/doc.go) 
 
 
 

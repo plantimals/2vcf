@@ -11,7 +11,7 @@ build2:
 	go build -o ${BINARY} cli/2vcf.go
 
 clean:
-	go clean
+	rm -rf bin && go clean
 
 
 windows:

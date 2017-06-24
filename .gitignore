@@ -4,3 +4,4 @@
 *.sw?
 *.out
 *.grind
+bin/

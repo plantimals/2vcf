@@ -14,4 +14,4 @@ clean:
 	rm -rf bin && go clean
 
 windows:
-	GOOS=windows GOARCH=386 go build -o 2vcf.exe 2vcf.go
+	GOOS=windows GOARCH=386 go build -o 2vcf.exe cmd/2vcf/2vcf.go

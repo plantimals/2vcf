@@ -1,4 +1,5 @@
 2vcf
+2vcf.exe
 *.vcf
 *.vcf.gz
 *.sw?

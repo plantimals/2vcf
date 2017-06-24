@@ -1,0 +1,134 @@
+hash: a3878b7559ae453cb95e1c7c4d055c9aaeb0271c69d2f02f45f5da86adca9834
+updated: 2017-06-24T15:13:29.413945711-05:00
+imports:
+- name: cloud.google.com/go
+  version: d4f8670e9dba7e0c9dd3f6da843d678afd21c587
+  subpackages:
+  - compute/metadata
+  - iam
+  - internal
+  - internal/optional
+  - internal/version
+  - storage
+- name: github.com/alecthomas/template
+  version: a0175ee3bccc567396460bf5acd36800cb10c49c
+  subpackages:
+  - parse
+- name: github.com/alecthomas/units
+  version: 2efee857e7cfd4f3d0138cc3cbb1b4966962b93a
+- name: github.com/biogo/hts
+  version: 71ed6f0cedb14828957509ab40af023760e71cb8
+  subpackages:
+  - bgzf
+- name: github.com/brentp/irelate
+  version: 51840b4b6bb33bb4c9e413e76c402a9fb2d90bd7
+  subpackages:
+  - interfaces
+- name: github.com/brentp/vcfgo
+  version: 17ed276c3d6d1fd24dbbc4b8d467a207d35663f1
+- name: github.com/briandowns/spinner
+  version: 48dbb65d7bd5c74ab50d53d04c949f20e3d14944
+- name: github.com/fatih/color
+  version: 570b54cabe6b8eb0bc2dfce68d964677d63b5260
+- name: github.com/golang/protobuf
+  version: 6a1fa9404c0aebf36c879bc50152edcc953910d2
+  subpackages:
+  - proto
+  - protoc-gen-go/descriptor
+  - ptypes/any
+- name: github.com/googleapis/gax-go
+  version: 84ed26760e7f6f80887a2fbfb50db3cc415d2cea
+- name: github.com/mattn/go-colorable
+  version: 5411d3eea5978e6cdc258b30de592b60df6aba96
+  repo: https://github.com/mattn/go-colorable
+- name: github.com/mattn/go-isatty
+  version: 57fdcb988a5c543893cc61bce354a6e24ab70022
+  repo: https://github.com/mattn/go-isatty
+- name: golang.org/x/net
+  version: 5f8847ae0d0e90b6a9dc8148e7ad616874625171
+  subpackages:
+  - context
+  - context/ctxhttp
+  - http2
+  - http2/hpack
+  - idna
+  - internal/timeseries
+  - lex/httplex
+  - trace
+- name: golang.org/x/oauth2
+  version: f047394b6d14284165300fd82dad67edb3a4d7f6
+  subpackages:
+  - google
+  - internal
+  - jws
+  - jwt
+- name: golang.org/x/sys
+  version: e24f485414aeafb646f6fca458b0bf869c0880a1
+  repo: https://go.googlesource.com/sys
+  subpackages:
+  - unix
+- name: golang.org/x/text
+  version: 4e9ab9ee170f2a39bd66c92b3e0a47ff47a4bc77
+  subpackages:
+  - secure/bidirule
+  - transform
+  - unicode/bidi
+  - unicode/norm
+- name: google.golang.org/api
+  version: 1ba364a3bb616587dfd46d5009edefdfd7896ed9
+  subpackages:
+  - genomics/v1
+  - gensupport
+  - googleapi
+  - googleapi/internal/uritemplates
+  - googleapi/transport
+  - internal
+  - iterator
+  - option
+  - storage/v1
+  - transport
+- name: google.golang.org/appengine
+  version: a2f4131514e563cedfdb6e7d267df9ad48591e93
+  subpackages:
+  - internal
+  - internal/app_identity
+  - internal/base
+  - internal/datastore
+  - internal/log
+  - internal/modules
+  - internal/remote_api
+  - internal/socket
+  - internal/urlfetch
+  - socket
+  - urlfetch
+- name: google.golang.org/genproto
+  version: aa2eb687b4d3e17154372564ad8d6bf11c3cf21f
+  subpackages:
+  - googleapis/api/annotations
+  - googleapis/iam/v1
+  - googleapis/rpc/status
+- name: google.golang.org/grpc
+  version: f0c566b827bc5e23848489a1a5de1adb5cbbeab3
+  subpackages:
+  - codes
+  - credentials
+  - credentials/oauth
+  - grpclb/grpc_lb_v1
+  - grpclog
+  - internal
+  - keepalive
+  - metadata
+  - naming
+  - peer
+  - stats
+  - status
+  - tap
+  - transport
+- name: gopkg.in/alecthomas/kingpin.v2
+  version: 7f0871f2e17818990e4eed73f9b5c2f429501228
+- name: gopkg.in/h2non/filetype.v1
+  version: 3093b8ebec6efb56ac813238b8beab4ed4eaac6a
+  subpackages:
+  - matchers
+  - types
+testImports: []

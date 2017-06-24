@@ -6,10 +6,10 @@ import (
 	"io"
 	"log"
 	"os"
-	"regexp"
 	"time"
 
 	"github.com/briandowns/spinner"
+	"github.com/fatih/color"
 
 	"cloud.google.com/go/storage"
 
@@ -30,13 +30,16 @@ type Client struct {
 	StagingBucket   string
 	GenomicsService *genomics.Service
 	GCSClient       *storage.Client
+	Logger          *log.Logger
 }
 
 type importResponse struct {
 	Name string `json:"name"`
 }
 
-var validURL = regexp.MustCompile(`^gs://.*$`)
+var (
+	logColor = color.New(color.FgRed).SprintFunc()
+)
 
 //New returns a genomics client for importing VCFs to google genomics
 func New(project string, stagingBucket string) (*Client, error) {
@@ -52,33 +55,38 @@ func New(project string, stagingBucket string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	logger := log.New(os.Stderr, logColor("[UPLOADER] "), log.Ldate|log.Ltime)
 	return &Client{
 		Project:         project,
 		GenomicsService: ggService,
 		GCSClient:       GCSClient,
+		StagingBucket:   stagingBucket,
 		DatasetName:     "my data",
 		VariantSetName:  "my variants",
+		Logger:          logger,
 	}, nil
 }
 
-//ImportVCF takes a path to your VCF and a staging bucket URL
-func (c *Client) ImportVCF(inputFile string, bucket string) error {
-	c.StagingBucket = bucket
+//ImportVCF takes a path to your VCF
+func (c *Client) ImportVCF(inputFile string) error {
 
 	start := time.Now()
-	gcsURL, err := c.stageVCF(inputFile, bucket)
+	gcsURL, err := c.stageVCF(inputFile, c.StagingBucket)
 	if err != nil {
 		return err
 	}
-	log.Printf("finished staging in: %.2f seconds\n", time.Since(start).Seconds())
+	if err := c.setAttributes(inputFile, c.StagingBucket); err != nil {
+		return err
+	}
+	c.Logger.Printf("finished staging in: %.2f seconds\n", time.Since(start).Seconds())
 
-	log.Println("about to create dataset")
+	c.Logger.Println("about to create dataset")
 	ds, err := c.getOrCreateDataset()
 	if err != nil {
 		return err
 	}
 
-	log.Println("about to create variantset")
+	c.Logger.Println("about to create variantset")
 	vs, err := c.getOrCreateVariantset(ds)
 	if err != nil {
 		return err
@@ -98,8 +106,7 @@ func (c *Client) ImportVCF(inputFile string, bucket string) error {
 	vrBytes, err := vr.MarshalJSON()
 	impResp := importResponse{}
 	json.Unmarshal(vrBytes, &impResp)
-	fmt.Printf("check on import progress by using the command: \n\tgcloud alpha genomics operations describe %s\n", impResp.Name)
-	fmt.Print(string(vrBytes))
+	fmt.Printf("\n\ncheck on import progress by using the command: \n\tgcloud alpha genomics operations describe %s\n", impResp.Name)
 	return nil
 }
 
@@ -110,15 +117,15 @@ func (c *Client) getOrCreateDataset() (*genomics.Dataset, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Println("listed datasets")
+	c.Logger.Println("listed datasets")
 	for _, dataset := range dsResp.Datasets {
 		if dataset.Name == c.DatasetName {
-			log.Printf("found existing dataset \"%s\"\n", c.DatasetName)
+			c.Logger.Printf("found existing dataset \"%s\"\n", c.DatasetName)
 			return dataset, nil
 		}
 	}
 
-	log.Printf("could not find Dataset named \"%s\", creating it now\n", c.DatasetName)
+	c.Logger.Printf("could not find Dataset named \"%s\", creating it now\n", c.DatasetName)
 
 	dc := c.GenomicsService.Datasets.Create(&genomics.Dataset{
 		Name:      c.DatasetName,
@@ -143,7 +150,7 @@ func (c *Client) getOrCreateVariantset(ds *genomics.Dataset) (*genomics.VariantS
 
 	for _, vs := range vsResp.VariantSets {
 		if vs.Name == c.VariantSetName {
-			log.Printf("found existing variantset \"%s\"\n", c.VariantSetName)
+			c.Logger.Printf("found existing variantset \"%s\"\n", c.VariantSetName)
 			return vs, nil
 		}
 	}
@@ -164,7 +171,7 @@ func (c *Client) stageVCF(inputFile string, bucket string) (string, error) {
 	filename := path.Base(inputFile)
 
 	gcsURL := fmt.Sprintf("gs://%s/%s", bucket, filename)
-	log.Println(gcsURL)
+	c.Logger.Println(gcsURL)
 
 	obj := staging.Object(filename)
 
@@ -180,17 +187,37 @@ func (c *Client) stageVCF(inputFile string, bucket string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	s := spinner.New(spinner.CharSets[11], 100*time.Millisecond)
-	s.Prefix = "uploading vcf   "
+	s.Prefix = "uploading vcf can take serveral minutes  "
 	s.Start()
 
 	b, err := io.Copy(upload, file)
 	if err != nil {
 		return "", err
 	}
+
 	s.Stop()
-	log.Printf("copied %v bytes to staging bucket\n", b)
+
+	c.Logger.Printf("copied %v bytes to staging bucket\n", b)
+
 	return gcsURL, nil
+}
+
+func (c *Client) setAttributes(inputFile, bucket string) error {
+	filename := path.Base(inputFile)
+
+	file := c.GCSClient.Bucket(bucket).Object(filename)
+
+	_, err := file.Update(context.Background(), storage.ObjectAttrsToUpdate{
+		ContentType:     "text/plain",
+		ContentEncoding: "gzip",
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Client) objectExists(bucket, object string) bool {

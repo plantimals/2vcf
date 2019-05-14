@@ -6,3 +6,4 @@
 *.out
 *.grind
 bin/
+vendor/

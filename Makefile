@@ -1,6 +1,6 @@
 BINARY_PATH=bin
 2VCF_BINARY=2vcf
-2VCF_PATH=./cmd/2vcf/
+2VCF_PATH=./
 
 build: $(2VCF_BINARY)
 

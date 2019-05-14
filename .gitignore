@@ -1,7 +1,10 @@
 2vcf
+2vcf.exe
 *.vcf
 *.vcf.gz
 *.sw?
 *.out
 *.grind
 bin/
+vendor/
+dist/

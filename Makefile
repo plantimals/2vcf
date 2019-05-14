@@ -1,6 +1,6 @@
 BINARY_PATH=bin
 2VCF_BINARY=2vcf
-2VCF_PATH=./cmd/2vcf/
+2VCF_PATH=./
 
 build: $(2VCF_BINARY)
 
@@ -14,4 +14,4 @@ clean:
 	rm -rf bin && go clean
 
 windows:
-	GOOS=windows GOARCH=386 go build -o 2vcf.exe 2vcf.go
+	GOOS=windows GOARCH=386 go build -o 2vcf.exe cmd/2vcf/2vcf.go

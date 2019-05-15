@@ -4,7 +4,8 @@ before:
   hooks:
 builds:
 - main: ./2vcf.go
-- binary: 2vcf
+  - Darwin
+  binary: 2vcf
 - env:
   - CGO_ENABLED=0
 archives:

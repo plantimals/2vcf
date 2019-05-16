@@ -67,7 +67,8 @@ func (c *Client) Convert23AndMe() {
 }
 
 func (c *Client) ConvertAncestry() {
-
+	c.ancestry = true
+	c.convertCalls()
 }
 
 func (c *Client) convertCalls() {

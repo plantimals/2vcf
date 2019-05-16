@@ -8,3 +8,4 @@
 bin/
 vendor/
 dist/
+.goreleaser.yml

@@ -15,13 +15,13 @@ import (
 )
 
 var (
-	app = kingpin.New("2vcf", "convert raw genotype calls from sources like 23andme or ancestry.com into vcf format and upload it to google genomics")
+	app = kingpin.New("2vcf", "convert raw genotype calls from sources like 23andme or ancestry.com into vcf format with dbSNP annotations")
 
 	conv    = app.Command("conv", "convert raw data to vcf format")
-	rawType = conv.Arg("raw genotype source", "source of the raw genotype data, 23andme or ancestry.com").Required().Enum("23andme", "ancestry")
-	inFile  = conv.Arg("input-data", "relative path to input data, zip or ascii").Required().ExistingFile()
-	outFile = conv.Flag("output-file", "relative path to output data, gzipped").Short('o').String()
-	vcfRef  = conv.Flag("vcf-ref", "relative path to vcf reference data, gzipped").Default("reference/reference.vcf.gz").Short('v').String()
+	rawType = conv.Arg("23andme or ancestry", "source of the raw genotype data, 23andme or ancestry.com").Required().Enum("23andme", "ancestry")
+	inFile  = conv.Flag("input", "path to input data, zip or ascii").Required().Short('i').ExistingFile()
+	vcfRef  = conv.Flag("ref", "path to gzipped vcf reference data").Required().Short('r').String()
+	outFile = conv.Flag("output", "path to output data, gzipped").Short('o').String()
 )
 
 var (

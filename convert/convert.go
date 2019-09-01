@@ -188,7 +188,7 @@ func getSampleFormatGT() *vcfgo.SampleFormat {
 	answer.Id = "GT"
 	answer.Description = "Genotype"
 	answer.Number = "."
-	answer.Type = "Integer"
+	answer.Type = "String"
 	return &answer
 }
 

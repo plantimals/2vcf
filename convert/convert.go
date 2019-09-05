@@ -21,6 +21,7 @@ type Client struct {
 	outputFile string
 	vcfRef     string
 	ancestry   bool
+	fixAllo    bool
 }
 
 var (
@@ -29,15 +30,16 @@ var (
 
 //Newclient returns a basic Client, with default reference path
 func Newclient(inputFile string, outputFile string) *Client {
-	return NewclientWithRef(inputFile, outputFile, "reference/reference.vcf.go")
+	return NewclientWithRef(inputFile, outputFile, "reference/reference.vcf.go", false)
 }
 
 //NewclientWithRef returns a new Client, containing the specified ref
-func NewclientWithRef(inputFile string, outputFile string, vcfRef string) *Client {
+func NewclientWithRef(inputFile string, outputFile string, vcfRef string, fixAllo bool) *Client {
 	return &Client{
 		inputFile:  inputFile,
 		outputFile: outputFile,
 		vcfRef:     vcfRef,
+		fixAllo:    fixAllo,
 	}
 }
 
@@ -98,6 +100,13 @@ func (c *Client) convertCalls() {
 		if !ok {
 			continue
 		}
+		if c.fixAllo {
+			if locus.chrom == "X" || locus.chrom == "chrX" {
+				if len(locus.gt) == 1 {
+					locus.gt = fmt.Sprintf("%s%s", locus.gt, locus.gt)
+				}
+			}
+		}
 		variant.Samples = addGenotypeSample(locus, variant)
 		vcfWriter.WriteVariant(variant)
 	}
@@ -151,7 +160,6 @@ func (c *Client) parse(line string) locus {
 	s := strings.Split(line, "\t")
 	pos, err := strconv.ParseInt(s[2], 10, 32)
 	errHndlr("error parsing pos: "+s[2], err)
-
 	// if reading ancestry data, alleles are split across
 	// columns 3 and 4, rather than 23andme's joined alleles
 	// in column 3

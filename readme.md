@@ -1,5 +1,7 @@
 ## 2vcf 
 
+[www.openb.io/2vcf](http://www.openb.io/2vcf/)
+
 in order to improve individual sovereignty over genetic/genomic information, facilitate a deeper understanding of biology and computation, and promote shared meaning, openb.io provides `2vcf` under the [MIT license](https://mit-license.org). `2vcf` will convert raw genotype data exports from [23andme](https://www.23andme.com) or [Ancestry.com](https://www.ancestry.com) into [VCF format](https://samtools.github.io/hts-specs/VCFv4.2.pdf).
 
 `2vcf` produces a VCF that contains annotations from dbSNP [build 151](https://github.com/ncbi/dbsnp/tree/master/Build%20Announcements/151) on `GRCh37.p13`. these annotations include allele frequencies from various sources including [1000 Genomes](https://www.internationalgenome.org) and [ExAC](http://exac.broadinstitute.org/), [RefSeq](https://www.ncbi.nlm.nih.gov/refseq/) gene annotations, and functional class of the variant.
